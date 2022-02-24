@@ -81,6 +81,8 @@ api:
   #         id(dsmr_instance).set_decryption_key(private_key);
 
 ota:
+  password: !secret ota_password
+  safe_mode: yes
 
 # dashboard_import:
 #   package_import_url: github://zuidwijk/dsmr/slimmelezer.yaml
@@ -181,7 +183,7 @@ sensor:
   - platform: uptime
     name: "${device_friendly_name} Uptime"
   - platform: wifi_signal
-    name: "${device_friendly_name} Wi-Fi Signal"
+    name: "${device_friendly_name} Wi-Fi RSSI Signal"
     update_interval: 60s
 
 text_sensor:
