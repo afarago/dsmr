@@ -62,7 +62,7 @@ namespace dsmr
  */
   template <typename... Ts>
   struct ParsedData;
-
+  
   /**
  * Base case: No fields present.
  */
@@ -221,12 +221,18 @@ namespace dsmr
         const char *unit_start = ++num_end; // skip *
         while (num_end < end && *num_end != ')' && *unit)
         {
-          if (*num_end++ != *unit++)
+          if (*num_end != *unit && 
+                toupper(*num_end) != toupper(*unit)) // sometimes unit captilization is incorrect (DTSD545 Hz vs HZ)
             return res.fail(INVALID_UNIT, unit_start);
+          num_end++; unit++;
         }
         if (*unit)
           return res.fail(INVALID_UNIT, unit_start);
       }
+
+      // skip extra spaces
+      while (num_end < end && *num_end == ' ')
+        num_end++;
 
       if (num_end >= end || *num_end != ')')
         return res.fail("Extra data", num_end);
@@ -419,13 +425,25 @@ namespace dsmr
       }
 
       // Parse data lines
+      bool is_in_block_area = false;
       while (line_end < end)
       {
         if (*line_end == '\r' || *line_end == '\n')
         {
-          ParseResult<void> tmp = parse_line(data, line_start, line_end, unknown_error);
-          if (tmp.err)
-            return tmp;
+          if (*(line_end-1) == '(') {
+            // if line ends with ( - this means that there is a block aggregation area starting
+            is_in_block_area = true;
+          }
+          
+          if (!is_in_block_area) {
+            ParseResult<void> tmp = parse_line(data, line_start, line_end, unknown_error);
+            if (tmp.err)
+              return tmp;
+          } else {
+            if (*line_start == '(') {
+              is_in_block_area = false;
+            }
+          }
           line_start = line_end + 1;
         }
         line_end++;

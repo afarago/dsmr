@@ -2,3 +2,4 @@
 *.py[cod]
 secrets.yaml
 .esphome
+szlaci_version/

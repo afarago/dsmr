@@ -519,6 +519,7 @@ namespace dsmr
     DEFINE_FIELD(sub_delivered, TimestampedFixedValue, ObisId(0, SUB_MBUS_ID, 24, 2, 1), TimestampedFixedField,
                  units::m3, units::dm3);
 
+
   } // namespace fields
 
 } // namespace dsmr

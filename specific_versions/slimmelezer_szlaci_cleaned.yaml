@@ -1,15 +1,11 @@
----
 substitutions:
-  device_name: "slimmelezer_hu"
-  device_friendly_name: "SlimmeLezer HU"
-  device_description: "DIY P1 module to read your smart meter, HU edition/afarago"
-    
+  device_name: "slimmelezer-d545"
+  device_friendly_name: "SlimmeLezer HU D545"
+  device_description: "DIY P1 module to read your smart meter, HU D545 edition/afarago"
+
 esphome:
   name: "${device_name}"
   comment: "${device_description}"
-  platform: ESP8266
-  esp8266_restore_from_flash: true
-  board: d1_mini
   name_add_mac_suffix: false
   project:
     name: zuidwijk.slimmelezer
@@ -28,14 +24,18 @@ esphome:
   #               level: info
   #               format: "Not using decryption key. If you need to set a key use Home Assistant service 'ESPHome:  ${device_name}_set_dsmr_key'"
 
+esp8266:
+  board: d1_mini
+  restore_from_flash: true
+
 external_components:
   - source: components
-    components: [ dsmr ]
+    components: [dsmr]
 
 wifi:
-  networks: []
-#    - ssid: !secret wifi_ssid
-#      password: !secret wifi_password
+  networks:
+    - ssid: "ABCD"
+      password: "1234"
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -49,13 +49,14 @@ captive_portal:
 logger:
   baud_rate: 0
   level: INFO
+  # level: DEBUG
 
 # Enable Home Assistant API
 api:
 
 ota:
   # password: !secret ota_password
-  # safe_mode: yes
+  safe_mode: yes
 
 # dashboard_import:
 #   package_import_url: github://zuidwijk/dsmr/slimmelezer.yaml
@@ -66,8 +67,8 @@ web_server:
 uart:
   baud_rate: 115200
   rx_pin: D7
-  rx_buffer_size: 1500
-
+  rx_buffer_size: 3000
+      
 # globals:
 #   - id: has_key
 #     type: bool
@@ -83,6 +84,7 @@ dsmr:
   #decryption_key: !secret decryption_key // enable this when using decryption for Luxembourg; key like '00112233445566778899AABBCCDDEEFF'
   crc_check: false
   max_telegram_length: 3000
+  receive_timeout: 200ms
 
 sensor:
   - platform: dsmr
@@ -102,12 +104,15 @@ sensor:
       name: "${device_friendly_name} Power Consumed"
     power_returned:
       name: "${device_friendly_name} Power Produced"
-    # electricity_failures:
-    #   name: "Electricity Failures"
-    #   icon: mdi:alert
-    # electricity_long_failures:
-    #   name: "Long Electricity Failures"
-    #   icon: mdi:alert
+    # electricity_threshold: # missing unit
+    #   name: "${device_friendly_name} Electricity Threshold"
+    electricity_tariff:
+      name: "${device_friendly_name} Electricity Tariff"
+    frequency:
+      name: "${device_friendly_name} Frequency"
+    energy_absolute:
+      name: "${device_friendly_name} Absolute active energy"
+      
     voltage_l1:
       name: "${device_friendly_name} Voltage Phase 1"
     voltage_l2:
@@ -120,18 +125,7 @@ sensor:
       name: "${device_friendly_name} Current Phase 2"
     current_l3:
       name: "${device_friendly_name} Current Phase 3"
-    electricity_threshold:
-      name: "${device_friendly_name} Electricity Threshold"
-    electricity_tariff:
-      name: "${device_friendly_name} Electricity Tariff"
-    # reactive_power_qi:
-    #   name: "${device_friendly_name} Reactive Power QI"
-    # reactive_power_qii:
-    #   name: "${device_friendly_name} Reactive Power QII"
-    # reactive_power_qiii:
-    #   name: "${device_friendly_name} Reactive Power QIII"
-    # reactive_power_qiv:
-    #   name: "${device_friendly_name} Reactive Power QIV"
+
     # reactive_energy_qi:
     #   name: "${device_friendly_name} Reactive Energy QI"
     # reactive_energy_qii:
@@ -148,10 +142,20 @@ sensor:
     #   name: "${device_friendly_name} Instantaneous Power Factor Phase 2"
     # instantaneous_power_factor_l3:
     #   name: "${device_friendly_name} Instantaneous Power Factor Phase 3"
-    frequency:
-      name: "${device_friendly_name} Frequency"
-    # absolute_active_energy:
-    #   name: "${device_friendly_name} Absolute active energy"
+    # reactive_power_qi:
+    #   name: "${device_friendly_name} Reactive Power QI"
+    # reactive_power_qii:
+    #   name: "${device_friendly_name} Reactive Power QII"
+    # reactive_power_qiii:
+    #   name: "${device_friendly_name} Reactive Power QIII"
+    # reactive_power_qiv:
+    #   name: "${device_friendly_name} Reactive Power QIV"
+    # energy_positive_reactive:
+    #   name: "${device_friendly_name} Positive reactive energy (Q+)"
+    # energy_negative_reactive:
+    #   name: "${device_friendly_name} Negative reactive energy (Q-)"
+    # energy_negative_reactive_tariff1:
+    #   name: "${device_friendly_name} Megative reactive energy (Q-) in tariff T1"
 
   - platform: uptime
     name: "${device_friendly_name} Uptime"
@@ -160,24 +164,6 @@ sensor:
     update_interval: 60s
 
 text_sensor:
-  - platform: dsmr
-    identification:
-      name: "${device_friendly_name} Identification"
-    # p1_version:
-    #   name: "${device_friendly_name} Version"
-    # p1_version_be:
-    #   name: "${device_friendly_name} Version Belgium"
-    # message_short:
-    #   name: "${device_friendly_name} Message Short"
-    # message_long: ### CRC problem - results in hardware dump
-    #   name: "${device_friendly_name} Message Long"
-    # equipment_id:
-    #   name: "${device_friendly_name} Equipment Id"
-    # equipment_name:
-    #   name: "DSMR equipment Name"
-    breaker_status:
-      name: "${device_friendly_name} Breaker Status"
-
   - platform: wifi_info
     ip_address:
       name: "${device_friendly_name} IP Address"
@@ -185,6 +171,11 @@ text_sensor:
       name: "${device_friendly_name} Wi-Fi SSID"
     bssid:
       name: "${device_friendly_name} Wi-Fi BSSID"
-  # - platform: version
-  #   name: "${device_friendly_name} ESPHome Version"
-  #   hide_timestamp: true
+
+  - platform: dsmr
+    identification:
+      name: "${device_friendly_name} Identification"
+    equipment_id:
+      name: "${device_friendly_name} Equipment Id"
+    breaker_status:
+      name: "${device_friendly_name} Breaker Status"
