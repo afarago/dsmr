@@ -3,7 +3,7 @@ substitutions:
   device_name: "slimmelezer"
   device_friendly_name: "SlimmeLezer"
   device_description: "DIY P1 module to read your smart meter"
-    
+
 esphome:
   name: "${device_name}"
   comment: "${device_description}"
@@ -30,12 +30,12 @@ esphome:
 
 external_components:
   - source: components
-    components: [ dsmr ]
+    components: [dsmr]
 
 wifi:
-  networks: 
-   - ssid: !secret wifi_ssid
-     password: !secret wifi_password
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -60,7 +60,7 @@ logger:
   #   captive_portal: INFO
   #   web_server: INFO
   #   uart: INFO
-  #   scheduler: INFO    
+  #   scheduler: INFO
 
 # Enable Home Assistant API
 api:
@@ -127,8 +127,14 @@ sensor:
       name: "${device_friendly_name} Energy Produced Tariff 2"
     power_delivered:
       name: "${device_friendly_name} Power Consumed"
+      id: power_consumed
+      on_value:
+        - script.execute: update_power_balance
     power_returned:
       name: "${device_friendly_name} Power Produced"
+      id: power_produced
+      on_value:
+        - script.execute: update_power_balance
     # electricity_failures:
     #   name: "Electricity Failures"
     #   icon: mdi:alert
@@ -186,6 +192,14 @@ sensor:
     name: "${device_friendly_name} Wi-Fi RSSI Signal"
     update_interval: 60s
 
+  - platform: template
+    name: "${device_friendly_name} Power Balance"
+    id: power_balance
+    unit_of_measurement: kW
+    state_class: measurement
+    device_class: power
+    accuracy_decimals: 3
+
 text_sensor:
   - platform: dsmr
     identification:
@@ -215,3 +229,10 @@ text_sensor:
   # - platform: version
   #   name: "${device_friendly_name} ESPHome Version"
   #   hide_timestamp: true
+
+script:
+  - id: update_power_balance
+    mode: single
+    then:
+      - lambda: |-
+          id(power_balance).publish_state(id(power_produced).state-id(power_consumed).state);
