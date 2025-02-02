@@ -47,7 +47,7 @@ static inline uint16_t _crc16_update(uint16_t crc, uint8_t data)
   {
     if (crc & 1)
     {
-      crc = (crc >> 1) ^ 0xA001;
+      crc = (crc >> 1) ^ 0x8005;
     }
     else
     {
