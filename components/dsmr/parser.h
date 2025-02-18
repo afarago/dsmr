@@ -32,10 +32,12 @@
 
 #include "crc16.h"
 #include "util.h"
+#include "esphome/core/log.h"
 
 namespace dsmr
 {
 
+static const char *const TAG = "dsmr";
   /**
  * ParsedData is a template for the result of parsing a Dsmr P1 message.
  * You pass the fields you want to add to it as template arguments.
@@ -357,6 +359,8 @@ namespace dsmr
 
         crc = _crc16_update(crc, *data_end); // Include the ! in CRC
 
+        esphome::esp_log_printf_(ESPHOME_LOG_LEVEL_DEBUG, TAG, __LINE__, ESPHOME_LOG_FORMAT("CRC: 0x%04x"), crc);
+        //this->ESP_LOGD(TAG, "CRC: 0x%04x", crc);
         ParseResult<uint16_t> check_res = CrcParser::parse(data_end + 1, str + n);
         if (check_res.err)
           return check_res;
@@ -364,7 +368,7 @@ namespace dsmr
         // Check CRC
         if (check_res.result != crc)
         {
-          return res.fail("Checksum mismatch", data_end + 1);
+          return res.fail("Checksum mismatch!!!", data_end + 1);
         }
         res = parse_data(data, data_start, data_end, unknown_error);
         res.next = check_res.next;
@@ -430,8 +434,9 @@ namespace dsmr
       {
         if (*line_end == '\r' || *line_end == '\n')
         {
+          // if line ends with ( or the next line starts with (
+          // - this means that there is a block aggregation area starting
           if (*(line_end-1) == '(') {
-            // if line ends with ( - this means that there is a block aggregation area starting
             is_in_block_area = true;
           }
           

@@ -135,6 +135,8 @@ void Dsmr::reset_telegram_() {
 }
 
 void Dsmr::receive_telegram_() {
+  size_t next_print_pos = 0;
+  std::string res;
   while (this->available_within_timeout_()) {
     const char c = this->read();
 
@@ -143,6 +145,7 @@ void Dsmr::receive_telegram_() {
       ESP_LOGV(TAG, "Header of telegram found");
       this->reset_telegram_();
       this->header_found_ = true;
+      next_print_pos = 0;
     }
     if (!this->header_found_)
       continue;
@@ -157,20 +160,59 @@ void Dsmr::receive_telegram_() {
     // Some v2.2 or v3 meters will send a new value which starts with '('
     // in a new line, while the value belongs to the previous ObisId. For
     // proper parsing, remove these new line characters.
-    if (c == '(') {
-      while (true) {
-        auto previous_char = this->telegram_[this->bytes_read_ - 1];
-        if (previous_char == '\n' || previous_char == '\r') {
-          this->bytes_read_--;
-        } else {
-          break;
-        }
-      }
-    }
+    // if (c == '(') {
+    //   while (true) {
+    //     auto previous_char = this->telegram_[this->bytes_read_ - 1];
+    //     if (previous_char == '\n' || previous_char == '\r') {
+    //       this->bytes_read_--;
+    //     } else {
+    //       break;
+    //     }
+    //   }
+    // }
 
     // Store the byte in the buffer.
     this->telegram_[this->bytes_read_] = c;
     this->bytes_read_++;
+
+    // Log each received line
+    if (c == '\n') {
+      res = "";
+      char buf[5];
+      char *bytes = this->telegram_;
+      for (size_t i = next_print_pos; i < this->bytes_read_; i++) {
+        if (bytes[i] == 7) {
+          res += "\\a";
+        } else if (bytes[i] == 8) {
+          res += "\\b";
+        } else if (bytes[i] == 9) {
+          res += "\\t";
+        } else if (bytes[i] == 10) {
+          res += "\\n";
+        } else if (bytes[i] == 11) {
+          res += "\\v";
+        } else if (bytes[i] == 12) {
+          res += "\\f";
+        } else if (bytes[i] == 13) {
+          res += "\\r";
+        } else if (bytes[i] == 27) {
+          res += "\\e";
+        } else if (bytes[i] == 34) {
+          res += "\\\"";
+        } else if (bytes[i] == 39) {
+          res += "\\'";
+        } else if (bytes[i] == 92) {
+          res += "\\\\";
+        } else if (bytes[i] < 32 || bytes[i] > 127) {
+          sprintf(buf, "\\x%02X", bytes[i]);
+          res += buf;
+        } else {
+          res += bytes[i];
+        }
+      }
+      next_print_pos = this->bytes_read_;
+      ESP_LOGD(TAG, "%s", res.c_str());
+    }
 
     // Check for a footer, i.e. exlamation mark, followed by a hex checksum.
     if (c == '!') {
