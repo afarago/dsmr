@@ -3,3 +3,4 @@
 secrets.yaml
 .esphome
 szlaci_version/
+.vscode
